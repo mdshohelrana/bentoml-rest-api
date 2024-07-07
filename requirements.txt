@@ -1,3 +1,9 @@
 bentoml
-torch
-transformers
+pandas
+scikit-learn
+grpcio
+grpcio-tools
+numpy
+pydantic
+typing_extensions
+pytest

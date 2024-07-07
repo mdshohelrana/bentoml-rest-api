@@ -1,8 +1,10 @@
-service: "service:Summarization"
+service: "service.py:InferenceGraph"
 labels:
   owner: shohelrana
-  project: bentoml
+  project: stock-prediction
 include:
-  - "*.py"
+  - "service.py"
+  - "common"
 python:
-  requirements_txt: requirements.txt
+  requirements_txt: "./requirements.txt"
+  lock_packages: false

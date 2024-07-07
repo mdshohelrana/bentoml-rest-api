@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+service FinancialModel {
+    rpc GetDataHead (Empty) returns (DataHead);
+    rpc Predict (Empty) returns (PredictionResponse);
+}
+
+message Empty {}
+
+message DataHead {
+    map<string, string> head = 1;
+}
+
+message PredictionResponse {
+    double mse = 1;
+    repeated double predictions = 2;
+}

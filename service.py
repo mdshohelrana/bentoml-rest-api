@@ -1,29 +1,97 @@
-from __future__ import annotations
-
-from transformers import pipeline
-
+import typing as t
+import numpy as np
+import pandas as pd
 import bentoml
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
 
-EXAMPLE_INPUT = "Breaking News: In an astonishing turn of events, the small \
-town of Willow Creek has been taken by storm as local resident Jerry Thompson's cat, \
-Whiskers, performed what witnesses are calling a 'miraculous and gravity-defying leap.' \
-Eyewitnesses report that Whiskers, an otherwise unremarkable tabby cat, jumped \
-a record-breaking 20 feet into the air to catch a fly. The event, which took \
-place in Thompson's backyard, is now being investigated by scientists for potential \
-breaches in the laws of physics. Local authorities are considering a town festival \
-to celebrate what is being hailed as 'The Leap of the Century."
+from common.utils import get_data_head, load_data
 
 
-@bentoml.service(
-    resources={"cpu": "2"},
-    traffic={"timeout": 10},
-)
-class Summarization:
-    def __init__(self) -> None:
-        # Load model into pipeline
-        self.pipeline = pipeline("summarization")
+@bentoml.service()
+class DataHeadService:
+    def __init__(self):
+        self.data_head = get_data_head()
 
-    @bentoml.api
-    def summarize(self, text: str = EXAMPLE_INPUT) -> str:
-        result = self.pipeline(text)
-        return result[0]["summary_text"]
+    @bentoml.api()
+    def get_data_head(self) -> t.List[t.Dict[str, t.Any]]:
+        return self.data_head.to_dict(orient='records')
+
+
+@bentoml.service()
+class StockPredictionService:
+    def __init__(self):
+        self.data = load_data()
+        self.model = LinearRegression()
+        self.train_model()
+
+    def train_model(self):
+        self.data['Previous_Close'] = self.data['Close'].shift(1)
+        self.data = self.data.dropna()
+        X = self.data[['Previous_Close']]
+        y = self.data['Close']
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42, shuffle=False)
+        self.model.fit(X_train, y_train)
+        self.X_test, self.y_test = X_test, y_test
+        self.y_pred = self.model.predict(X_test)
+        self.rmse = np.sqrt(mean_squared_error(y_test, self.y_pred))
+
+    @bentoml.api()
+    def get_predictions(self) -> t.List[float]:
+        return self.y_pred.tolist()
+
+    @bentoml.api()
+    def get_rmse(self) -> float:
+        return self.rmse
+
+
+@bentoml.service()
+class PredictionsService:
+    stock_prediction_service = bentoml.depends(StockPredictionService)
+
+    @bentoml.api()
+    async def get_predictions(self) -> t.List[float]:
+        return self.stock_prediction_service.get_predictions()
+
+
+@bentoml.service()
+class RMSEService:
+    stock_prediction_service = bentoml.depends(StockPredictionService)
+
+    @bentoml.api()
+    async def get_rmse(self) -> float:
+        return self.stock_prediction_service.get_rmse()
+
+
+@bentoml.service()
+class InferenceGraph:
+    data_head_service = bentoml.depends(DataHeadService)
+    stock_prediction_service = bentoml.depends(StockPredictionService)
+
+    @bentoml.api()
+    async def get_data_head(self) -> t.List[t.Dict[str, t.Any]]:
+        return self.data_head_service.get_data_head()
+
+    @bentoml.api()
+    async def get_predictions(self) -> t.List[float]:
+        return self.stock_prediction_service.get_predictions()
+
+    @bentoml.api()
+    async def get_rmse(self) -> float:
+        return self.stock_prediction_service.get_rmse()
+
+    @bentoml.api()
+    async def get_inference(self) -> t.Dict[str, t.Any]:
+        data_head = self.data_head_service.get_data_head()
+        predictions = self.stock_prediction_service.get_predictions()
+        rmse = self.stock_prediction_service.get_rmse()
+        return {
+            "data_head": data_head,
+            "predictions": predictions,
+            "rmse": rmse
+        }
+
+
+svc = InferenceGraph()
