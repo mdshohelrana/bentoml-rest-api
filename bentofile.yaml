@@ -1,4 +1,4 @@
-service: "service.py:InferenceGraph"
+service: "service.py:Svc"
 labels:
   owner: shohelrana
   project: stock-prediction
