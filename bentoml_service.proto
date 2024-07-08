@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package bentoml;
+
+service BentoMLService {
+    rpc GetDataHead (Empty) returns (DataHeadResponse);
+    rpc GetPredictions (Empty) returns (PredictionsResponse);
+    rpc GetRMSE (Empty) returns (RMEResponse);
+    rpc GetInference (Empty) returns (InferenceResponse);
+}
+
+message Empty {}
+
+message DataHeadResponse {
+    repeated DataHead data_head = 1;
+}
+
+message DataHead {
+    map<string, string> row = 1;
+}
+
+message PredictionsResponse {
+    repeated float predictions = 1;
+}
+
+message RMEResponse {
+    float rmse = 1;
+}
+
+message InferenceResponse {
+    repeated DataHead data_head = 1;
+    repeated float predictions = 2;
+    float rmse = 3;
+}

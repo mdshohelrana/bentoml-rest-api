@@ -1,24 +1,33 @@
 import grpc
-from grpc import model_pb2_grpc, model_pb2
+import bentoml_service_pb2
+import bentoml_service_pb2_grpc
 
 
 def run():
     with grpc.insecure_channel('localhost:50051') as channel:
-        stub = model_pb2_grpc.FinancialModelStub(channel)
+        stub = bentoml_service_pb2_grpc.BentoMLServiceStub(channel)
 
-        response = stub.GetDataHead(model_pb2.Empty())
-        print("Data Head:", response.data_head)
+        # Get Data Head
+        response = stub.GetDataHead(bentoml_service_pb2.Empty())
+        print("Data Head:")
+        for row in response.data_head:
+            print(row.row)
 
-        response = stub.GetPredictions(model_pb2.Empty())
+        # Get Predictions
+        response = stub.GetPredictions(bentoml_service_pb2.Empty())
         print("Predictions:", response.predictions)
 
-        response = stub.GetRMSE(model_pb2.Empty())
+        # Get RMSE
+        response = stub.GetRMSE(bentoml_service_pb2.Empty())
         print("RMSE:", response.rmse)
 
-        response = stub.GetInference(model_pb2.Empty())
-        print("Inference - Data Head:", response.data_head)
-        print("Inference - Predictions:", response.predictions)
-        print("Inference - RMSE:", response.rmse)
+        # Get Inference
+        response = stub.GetInference(bentoml_service_pb2.Empty())
+        print("Inference Data Head:")
+        for row in response.data_head:
+            print(row.row)
+        print("Inference Predictions:", response.predictions)
+        print("Inference RMSE:", response.rmse)
 
 
 if __name__ == '__main__':
