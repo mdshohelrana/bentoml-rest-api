@@ -1,13 +1,33 @@
-FROM python:3.8-slim
+# Use an official Debian runtime as a parent image
+FROM debian:stable-slim
 
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV BENTOML_HOME=/bentoml
+
+# Install Python and other dependencies
+RUN apt-get update \
+    && apt-get install -y python3 python3-pip python3-venv \
+    && apt-get clean
+
+# Set the working directory in the container
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-COPY . .
+# Create and activate a virtual environment
+RUN python3 -m venv /venv
+ENV PATH="/venv/bin:$PATH"
 
-ENV BENTOML_HOME=/bentoml
-RUN bentoml build
+# Install any needed packages specified in requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["bentoml", "serve", "service.py:svc", "--production"]
+# Create a directory for BentoML
+RUN mkdir -p /bentoml
+
+# Expose the port the app runs on
+EXPOSE 3000
+
+# Run BentoML serve command
+CMD ["bentoml", "serve", "service.py:Svc", "--reload"]
