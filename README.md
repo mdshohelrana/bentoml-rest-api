@@ -21,7 +21,7 @@ Perform the following steps to run this project and deploy it to BentoCloud.
 2. Serve your model as an HTTP server. This starts a local server at [http://localhost:3000](http://localhost:3000/), making your model accessible as a web service.
 
    ```bash
-   bentoml serve service.py:svc --reload
+   bentoml serve service.py:Svc --reload
    ```
 
 3. To serve the gRPC server, run the following command:

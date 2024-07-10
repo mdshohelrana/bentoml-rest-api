@@ -3,6 +3,7 @@ import grpc
 import bentoml_service_pb2
 import bentoml_service_pb2_grpc
 import logging
+import pandas as pd
 from services.data_broker_service import DataBrokerService
 from services.data_prediction_service import DataPredictionService
 from services.data_rmse_service import DataRMSEService
@@ -23,8 +24,10 @@ class BentoMLServiceServicer(bentoml_service_pb2_grpc.BentoMLServiceServicer):
                 logging.info(f"Processing row: {row}")
                 map_entry = response.data_head.add()
                 for key, value in row.items():
+                    if isinstance(value, pd.Timestamp):
+                        value = value.strftime('%Y-%m-%d %H:%M:%S')
                     logging.info(f"Adding key: {key}, value: {value}")
-                    map_entry.row[key] = value
+                    map_entry.row[key] = str(value)
             return response
         except Exception as e:
             logging.error(f"Error in GetDataHead: {e}")
@@ -49,7 +52,9 @@ class BentoMLServiceServicer(bentoml_service_pb2_grpc.BentoMLServiceServicer):
         for row in data_head:
             map_entry = response.data_head.add()
             for key, value in row.items():
-                map_entry.row[key] = value
+                if isinstance(value, pd.Timestamp):
+                    value = value.strftime('%Y-%m-%d %H:%M:%S')
+                map_entry.row[key] = str(value)
 
         response.predictions.extend(predictions)
         response.rmse = rmse

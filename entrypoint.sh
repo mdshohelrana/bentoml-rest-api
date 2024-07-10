@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Function to clean up background processes
+cleanup() {
+    echo "Cleaning up..."
+    kill -SIGTERM "$SERVER_PID" 2>/dev/null
+    wait "$SERVER_PID" 2>/dev/null
+}
+
+# Trap SIGTERM and SIGINT signals to run the cleanup function
+trap cleanup SIGTERM SIGINT
+
 # Start the gRPC server in the background
 python grpc_server.py &
 SERVER_PID=$!
