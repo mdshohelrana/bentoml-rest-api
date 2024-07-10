@@ -2,10 +2,10 @@ from concurrent import futures
 import grpc
 import bentoml_service_pb2
 import bentoml_service_pb2_grpc
+import logging
 from services.data_broker_service import DataBrokerService
 from services.data_prediction_service import DataPredictionService
 from services.data_rmse_service import DataRMSEService
-
 
 class BentoMLServiceServicer(bentoml_service_pb2_grpc.BentoMLServiceServicer):
     def __init__(self):
@@ -14,13 +14,23 @@ class BentoMLServiceServicer(bentoml_service_pb2_grpc.BentoMLServiceServicer):
         self.data_rmse_service = DataRMSEService()
 
     def GetDataHead(self, request, context):
-        data_head = self.data_broker_service.get_data_head()
-        response = bentoml_service_pb2.DataHeadResponse()
-        for row in data_head:
-            map_entry = response.data_head.add()
-            for key, value in row.items():
-                map_entry.row[key] = value
-        return response
+        logging.info("GetDataHead called")
+        try:
+            data_head = self.data_broker_service.get_data_head()
+            logging.info(f"data_head: {data_head}")
+            response = bentoml_service_pb2.DataHeadResponse()
+            for row in data_head:
+                logging.info(f"Processing row: {row}")
+                map_entry = response.data_head.add()
+                for key, value in row.items():
+                    logging.info(f"Adding key: {key}, value: {value}")
+                    map_entry.row[key] = value
+            return response
+        except Exception as e:
+            logging.error(f"Error in GetDataHead: {e}")
+            context.set_details(str(e))
+            context.set_code(grpc.StatusCode.INTERNAL)
+            return bentoml_service_pb2.DataHeadResponse()
 
     def GetPredictions(self, request, context):
         predictions = self.data_prediction_service.get_predictions()
@@ -45,15 +55,15 @@ class BentoMLServiceServicer(bentoml_service_pb2_grpc.BentoMLServiceServicer):
         response.rmse = rmse
         return response
 
-
 def serve():
+    logging.basicConfig(level=logging.INFO)
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     bentoml_service_pb2_grpc.add_BentoMLServiceServicer_to_server(
         BentoMLServiceServicer(), server)
     server.add_insecure_port('[::]:50051')
     server.start()
+    logging.info("Server started on port 50051")
     server.wait_for_termination()
-
 
 if __name__ == '__main__':
     serve()
