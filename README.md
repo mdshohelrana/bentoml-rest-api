@@ -14,6 +14,7 @@ Perform the following steps to run this project and deploy it to BentoCloud.
 1. Install the required dependencies:
 
    ```bash
+   python -m pip install --upgrade pip
    pip install -r requirements.txt
    ```
 
