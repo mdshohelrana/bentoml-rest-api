@@ -85,3 +85,6 @@ wrapt==1.16.0
 wsproto==1.2.0
 yarl==1.9.4
 zipp==3.19.2
+transformers
+tensorflow==2.17.0
+torch
